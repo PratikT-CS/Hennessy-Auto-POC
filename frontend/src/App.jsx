@@ -1,38 +1,15 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import DealList from './components/DealList';
+import DealForm from './components/DealForm';
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <>
-      <div className='flex justify-center'>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="h-screen w-screen flex">
+      <div className="w-1/4 bg-gray-100 p-4 overflow-y-auto">
+        <DealList />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+      <div className="w-3/4 p-6 overflow-y-auto">
+        <DealForm />
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-      <h1 class="text-3xl font-bold underline">
-        Hello world!
-      </h1>
-    </>
-  )
+    </div>
+  );
 }
-
-export default App
