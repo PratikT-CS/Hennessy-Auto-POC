@@ -1,5 +1,4 @@
 import boto3
-import json
 import os
 from dotenv import load_dotenv
 
@@ -9,7 +8,9 @@ def invoke_bda_job(s3uri, s3uri_output):
     """
     Function for invoking BDA (Bedrock Data Automation) job.
 
-
+    :param s3uri: S3 URI of the input file
+    :param s3uri_output: S3 URI for the output file
+    :return: Response from the BDA job invocation
     """
     bda_runtime_client = boto3.client("bedrock-data-automation-runtime")
 
@@ -26,8 +27,8 @@ def invoke_bda_job(s3uri, s3uri_output):
         },
         dataAutomationProfileArn=os.getenv('DATA_AUTOMATION_PROFILE_ARN')
     )
-    
     print(response)
+    return response
     
 if __name__ == "__main__":
     invoke_bda_job("s3://hennessy-auto-poc/input/MV1.pdf", "s3://hennessy-auto-poc/output/mv1-test")
