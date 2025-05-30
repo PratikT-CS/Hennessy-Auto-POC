@@ -3,10 +3,53 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.models.models import Deal, DealType, Person, Role, Vehicle, Document, DocumentType
 
+# function to add deal in deals table
+async def create_deal(db: AsyncSession, frontend_deal_id: str, deal_type: DealType):
+    result = await db.execute(select(Deal).where(Deal.frontend_deal_id == frontend_deal_id))
+    existing = result.scalars().first()
+    if existing:
+        return existing
+
+    new_deal = Deal(frontend_deal_id=frontend_deal_id, deal_type=deal_type)
+    db.add(new_deal)
+    await db.commit()
+    await db.refresh(new_deal)
+    return new_deal
+
+#function to add person in persons table
+async def add_person(db: AsyncSession, deal_id: int, name: str, role: Role):
+    person = Person(deal_id=deal_id, name=name, role=role)
+    db.add(person)
+    await db.commit()
+    await db.refresh(person)
+    return person
+
+
+#function to add vehicle in vehicles table
+async def add_vehicle(db: AsyncSession, deal_id: int, vin: str, make: str, model: str, year: int):
+    vehicle = Vehicle(deal_id=deal_id, vin=vin, make=make, model=model, year=year)
+    db.add(vehicle)
+    await db.commit()
+    await db.refresh(vehicle)
+    return vehicle
+
+#function to add document in documents table
+async def add_document(db: AsyncSession, deal_id: int, document_type: DocumentType, s3_url: str, extracted_data: dict):
+    document = Document(
+        deal_id=deal_id,
+        document_type=document_type,
+        s3_url=s3_url,
+        extracted_data=extracted_data
+    )
+    db.add(document)
+    await db.commit()
+    await db.refresh(document)
+    return document
+
 
 async def create_sample_deal(session: AsyncSession) -> Deal:
     # Create a new Deal
-    deal = Deal(deal_type=DealType.tag_and_title)
+    deal = Deal(frontend_deal_id="25050001", deal_type=DealType.tag_and_title)
 
     # Create Person entries (linked directly to the deal)
     buyer = Person(name="John Doe", role=Role.buyer)

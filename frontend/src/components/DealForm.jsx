@@ -255,7 +255,7 @@ export default function DealForm() {
     try {
       setLoading(true);
       const response = await axios.post(
-        `http://127.0.0.1:8000/api/upload/:${clientId}/:250001`,
+        `http://127.0.0.1:8000/api/upload/${clientId}/25050001`,
         formData
       );
       setResult(`Success: ${JSON.stringify(response.data)}`);

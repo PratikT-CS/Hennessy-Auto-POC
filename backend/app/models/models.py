@@ -89,6 +89,7 @@ class Role(str, enum.Enum):
 class Deal(Base):
     __tablename__ = "deals"
     id = Column(Integer, primary_key=True)
+    frontend_deal_id = Column(String, unique=True, nullable=False)
     deal_type = Column(Enum(DealType), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

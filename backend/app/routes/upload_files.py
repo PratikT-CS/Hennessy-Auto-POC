@@ -1,8 +1,15 @@
 from fastapi import APIRouter, UploadFile, File, Path
 from fastapi.responses import JSONResponse
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from ..aws.upload_files_to_s3 import upload_files_to_s3
 from ..aws.invoke_bda_job import invoke_bda_job
 from ..aws.get_invocation_result import get_invocation_result
+from ..aws.get_result_from_s3 import read_json_result_from_s3
+from ..crud.deal_crud import create_deal
+from ..crud.deal_crud import add_document
+from ..db.database import get_db
+from app.models.models import DealType
 from dotenv import load_dotenv
 from ..routes.ws import connections
 import os
@@ -24,10 +31,16 @@ async def notify(client_id: str, message: str):
         await connections[client_id].send_text(message)
 
 @router.post("/upload/{client_id}/{deal_id}", tags=["Upload Files"])
+# async def upload_and_process_files(
+#     client_id: str = Path(..., description="Client ID for WebSocket connection"),
+#     deal_id: str = Path(..., description="Deal ID for the files being uploaded"),
+#     files: list[UploadFile] = File(..., description="List of files to upload")
+# ):
 async def upload_and_process_files(
-    client_id: str = Path(..., description="Client ID for WebSocket connection"),
-    deal_id: str = Path(..., description="Deal ID for the files being uploaded"),
-    files: list[UploadFile] = File(..., description="List of files to upload")
+    client_id: str,
+    deal_id: str,
+    files: list[UploadFile] = File(...),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Endpoint to upload files to S3. 
@@ -37,6 +50,7 @@ async def upload_and_process_files(
     """ 
     bucket_name = os.getenv("S3_BUCEKT_NAME")
     print("Bucket name upload files: "+bucket_name)
+    deal = create_deal(db=db, frontend_deal_id=deal_id, deal_type=DealType.tag_and_title)
     final_response = {}
     try:
         for file in files:
@@ -68,14 +82,25 @@ async def upload_and_process_files(
                 
                 invocation_arn = result['invocationArn']
                 status = get_invocation_result(invocation_arn)
+                extracted_data = {}
 
                 if status.get('status') == "Success":
+                    result_url = status['outputConfiguration']['s3Uri']
+                    extracted_data = await read_json_result_from_s3(result_url)
                     final_response[file_name].update({"bda_invocation": True})
                     await notify(client_id, f"BDA invocation completed for file {file_name} successfully. Results are stored in {status.get('outputConfiguration')['s3Uri'].replace('job_metadata.json', '0/custom_output/0/result.json')}")
                 else:
                     final_response[file_name].update({"bda_invocation": False})
                     await notify(client_id, f"BDA invocation completed with error for file {file_name}. Error: {status}")
-                
+
+                add_document(
+                    db=db,
+                    deal_id=deal.id,
+                    document_type=file_name,
+                    s3_url=f"s3://{bucket_name}/input/{deal_id}/{file_name}",
+                    extracted_data=extracted_data
+                )
+
         return {
             "status": json.dumps(final_response)
         }
