@@ -67,6 +67,10 @@ export default function DealForm() {
       console.error(error);
       setResult("Failed to process deal. Please try again.");
     } finally {
+      // Reset form fields
+      setInput("");
+      setDocuments({});
+      setDealType(dealOptions[0]);
       setLoading(false);
     }
   };
