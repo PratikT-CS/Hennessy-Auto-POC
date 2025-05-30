@@ -191,11 +191,12 @@ const requiredDocsMap = {
 
 export default function DealForm() {
   const [input, setInput] = useState("");
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState(true);
   const [dealType, setDealType] = useState(dealOptions[0]);
   const [documents, setDocuments] = useState({});
   const [loading, setLoading] = useState(false);
   const [clientId] = useState(uuidv4()); // Generate unique client ID
+  const [wsMessage, setWsMessage] = useState("");
   const wsRef = useRef(null);
 
   const requiredDocs = requiredDocsMap[dealType.value];
@@ -207,7 +208,10 @@ export default function DealForm() {
   useEffect(() => {
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientId}`);
     ws.onopen = () => console.log("WebSocket connected");
-    ws.onmessage = (event) => console.log("Message from server:", event.data);
+    ws.onmessage = (event) => {
+      console.log("Message from server:", event.data);
+      setWsMessage(event.data);
+    };
     ws.onerror = (err) => console.error("WebSocket error:", err);
     ws.onclose = () => console.log("WebSocket closed");
 
@@ -236,18 +240,22 @@ export default function DealForm() {
     }
 
     const formData = new FormData();
-    formData.append("dealType", dealType.value);
-    formData.append("description", input);
+    // formData.append("dealType", dealType.value);
+    // formData.append("description", input);
 
+    // var files = [];
     requiredDocs.forEach((docLabel) => {
-      formData.append("documents", documents[docLabel]);
-      formData.append("document_names", docLabel);
+      // files.push(documents[docLabel]);
+      formData.append("files", documents[docLabel]);
+      // formData.append("document_names", docLabel);
     });
+    // formData.append("files", files);
+    // console.log(formData);
 
     try {
       setLoading(true);
       const response = await axios.post(
-        `https://127.0.0.1:8000/api/upload/:${clientId}/:250001`,
+        `http://127.0.0.1:8000/api/upload/:${clientId}/:250001`,
         formData
       );
       setResult(`Success: ${JSON.stringify(response.data)}`);
@@ -357,7 +365,7 @@ export default function DealForm() {
         {result && (
           <div className="bg-green-100 p-4 rounded-lg shadow mt-5">
             <h3 className="font-semibold text-green-800">Result</h3>
-            <p>{result}</p>
+            <p>{wsMessage}</p>
           </div>
         )}
       </div>

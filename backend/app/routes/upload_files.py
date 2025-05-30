@@ -19,6 +19,7 @@ async def notify(client_id: str, message: str):
     :param client_id: The ID of the client to notify.
     :param message: The message to send.
     """
+    print("Client ID: "+client_id)
     if client_id in connections:
         await connections[client_id].send_text(message)
 
