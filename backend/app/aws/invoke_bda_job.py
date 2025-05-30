@@ -13,7 +13,8 @@ def invoke_bda_job(s3uri, s3uri_output):
     :return: Response from the BDA job invocation
     """
     bda_runtime_client = boto3.client("bedrock-data-automation-runtime")
-
+    print(f"s3Uri input: {s3uri}")
+    print(f"s3Uri output: {s3uri_output}")
     response = bda_runtime_client.invoke_data_automation_async(
         inputConfiguration={
             's3Uri': s3uri

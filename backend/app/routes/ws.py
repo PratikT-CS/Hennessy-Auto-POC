@@ -1,12 +1,12 @@
-from fastapi import FastAPI, APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 router = APIRouter(prefix="/ws")
 
 connections = {}
 
-@router.websocket("/ws/{client_id}")
+@router.websocket("/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    await websocket.accept()  # 👈 REQUIRED
+    await websocket.accept()
     connections[client_id] = websocket
     try:
         await websocket.send_text(f"Hello client {client_id}")
