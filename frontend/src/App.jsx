@@ -1,5 +1,6 @@
 import DealList from './components/DealList';
-import DealForm from './components/DealForm';
+
+import { Outlet } from 'react-router-dom'
 
 export default function App() {
   return (
@@ -8,7 +9,7 @@ export default function App() {
         <DealList />
       </div>
       <div className="w-3/4 p-6 overflow-y-auto">
-        <DealForm />
+        <Outlet />
       </div>
     </div>
   );
