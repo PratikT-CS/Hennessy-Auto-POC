@@ -12,7 +12,7 @@ const dealOptions = [
 
 const requiredDocsMap = {
   trade: ["Title", "Bill of Sale", "Power of Attorney"],
-  tag_title: ["Bill of Sale", "MV1 Form", "Driver's License"],
+  tag_title: ["Bill of Sale", "MV1 Form", "POA"],
 };
 
 export default function DealForm() {
@@ -96,12 +96,13 @@ export default function DealForm() {
     try {
       setLoading(true);
       const response = await axios.post(
-        `http://127.0.0.1:8000/api/upload/${clientId}/123456`,
+        `http://127.0.0.1:8000/api/upload/${clientId}/123123`,
         formData
       );
-      setDocStatus(response?.data?.processing_details?.documents_details)
-      setBckDealId(response.data?.processing_details?.deal_id);
-      setResult(`Success: ${JSON.stringify(response?.data)}`);
+      // setDocStatus(JSON.parse(response?.data?.status))
+      console.log(response?.data);
+      setBckDealId(111222);
+      setResult(`Success: ${response.data}`)
     } catch (error) {
       console.error(error);
       setResult("Failed to process deal. Please try again.");
