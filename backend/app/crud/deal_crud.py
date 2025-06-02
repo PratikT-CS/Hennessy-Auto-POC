@@ -2,6 +2,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.models.models import Deal, DealType, Person, Role, Vehicle, Document, DocumentType
+from fastapi.encoders import jsonable_encoder
+
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (datetime)):
+            return obj.isoformat()
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
 
 # function to add deal in deals table
 async def create_deal(db: AsyncSession, frontend_deal_id: str, deal_type: DealType):
@@ -35,6 +46,7 @@ async def add_vehicle(db: AsyncSession, deal_id: int, vin: str, make: str, model
 
 #function to add document in documents table
 async def add_document(db: AsyncSession, deal_id: int, document_type: DocumentType, s3_url: str, extracted_data: dict):
+
     document = Document(
         deal_id=deal_id,
         document_type=document_type,
@@ -43,8 +55,9 @@ async def add_document(db: AsyncSession, deal_id: int, document_type: DocumentTy
     )
     db.add(document)
     await db.commit()
+    print(f"Inserted document ID: {document.id}")
     await db.refresh(document)
-    return document
+    return jsonable_encoder(document)
 
 
 async def create_sample_deal(session: AsyncSession) -> Deal:
