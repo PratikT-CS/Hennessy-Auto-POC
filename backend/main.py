@@ -1,5 +1,10 @@
 from fastapi import FastAPI, Depends
-from app.routes import hello
+from fastapi.middleware.cors import CORSMiddleware
+from app.routes import upload_files
+from app.routes import ws
+from dotenv import load_dotenv
+
+load_dotenv()
 from app.db.database import SessionLocal
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud import deal_crud
@@ -8,8 +13,17 @@ import traceback
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],           # use ["*"] for development if needed
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include routes
-app.include_router(hello.router)
+app.include_router(upload_files.router)
+app.include_router(ws.router)
 
 @app.get("/")
 def read_root():

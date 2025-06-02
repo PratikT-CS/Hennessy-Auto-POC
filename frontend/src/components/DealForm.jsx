@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Select from "react-select";
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 
 const dealOptions = [
   { value: "trade", label: "Trade Pack" },
@@ -14,17 +15,34 @@ const requiredDocsMap = {
 
 export default function DealForm() {
   const [input, setInput] = useState("");
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState(true);
   const [dealType, setDealType] = useState(dealOptions[0]);
   const [documents, setDocuments] = useState({});
   const [loading, setLoading] = useState(false);
+  const [clientId] = useState(uuidv4()); // Generate unique client ID
+  const [wsMessage, setWsMessage] = useState("");
+  const wsRef = useRef(null);
 
   const requiredDocs = requiredDocsMap[dealType.value];
 
   useEffect(() => {
-    // Reset documents when deal type changes
     setDocuments({});
   }, [dealType]);
+
+  useEffect(() => {
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientId}`);
+    ws.onopen = () => console.log("WebSocket connected");
+    ws.onmessage = (event) => {
+      console.log("Message from server:", event.data);
+      setWsMessage(event.data);
+    };
+    ws.onerror = (err) => console.error("WebSocket error:", err);
+    ws.onclose = () => console.log("WebSocket closed");
+
+    wsRef.current = ws;
+
+    return () => ws.close();
+  }, [clientId]);
 
   const handleSingleFileUpload = (e, docLabel) => {
     const file = e.target.files[0];
@@ -41,33 +59,29 @@ export default function DealForm() {
       return;
     }
 
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send("Start processing deal");
+    }
+
     const formData = new FormData();
-    formData.append("dealType", dealType.value);
-    formData.append("description", input);
+    // formData.append("dealType", dealType.value);
 
     requiredDocs.forEach((docLabel) => {
-      formData.append("documents", documents[docLabel]);
-      formData.append("document_names", docLabel);
+      // formData.append("docLabel", documents[docLabel]);
+      formData.append("files", documents[docLabel]);
     });
 
     try {
       setLoading(true);
-      // const response = await axios.post(
-      //   "https://example.com/api/process-deal",
-      //   formData,
-      //   {
-      //     headers: {
-      //       "Content-Type": "multipart/form-data",
-      //     },
-      //   }
-      // );
-      console.log(formData);
+      const response = await axios.post(
+        `http://127.0.0.1:8000/api/upload/${clientId}/2506001`,
+        formData
+      );
       setResult(`Success: ${JSON.stringify(response.data)}`);
     } catch (error) {
       console.error(error);
       setResult("Failed to process deal. Please try again.");
     } finally {
-      // Reset form fields
       setInput("");
       setDocuments({});
       setDealType(dealOptions[0]);
@@ -170,7 +184,7 @@ export default function DealForm() {
         {result && (
           <div className="bg-green-100 p-4 rounded-lg shadow mt-5">
             <h3 className="font-semibold text-green-800">Result</h3>
-            <p>{result}</p>
+            <p>{wsMessage}</p>
           </div>
         )}
       </div>
