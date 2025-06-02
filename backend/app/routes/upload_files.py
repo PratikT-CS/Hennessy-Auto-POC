@@ -12,7 +12,7 @@ load_dotenv()
 
 router = APIRouter(prefix="/api")
 
-async def notify(client_id: str, message: str):
+async def notify(client_id: str, message: str, processing_details: dict):
     """
     Helper function to send a notification to the client via WebSocket.
     
@@ -21,7 +21,21 @@ async def notify(client_id: str, message: str):
     """
     print("Client ID: "+client_id)
     if client_id in connections:
-        await connections[client_id].send_text(message)
+        await connections[client_id].send_json({
+            "message": message,
+            "processing_started": True,
+            "processing_details": processing_details,
+            "client_id": client_id
+        })
+
+def cascade_fail(status_dict):
+    keys = ["upload_to_s3", "bda_invocation", "database_update", "validation"]
+    for i, key in enumerate(keys):
+        if status_dict[key] is False:
+            # Modify in place: set all following steps to False
+            for next_key in keys[i + 1:]:
+                status_dict[next_key] = False
+            break
 
 @router.post("/upload/{client_id}/{deal_id}", tags=["Upload Files"])
 async def upload_and_process_files(
@@ -38,14 +52,24 @@ async def upload_and_process_files(
     bucket_name = os.getenv("S3_BUCEKT_NAME")
     print("Bucket name upload files: "+bucket_name)
     final_response = {}
+    processing_details = {
+        "deal_id": deal_id,
+        "documents_details":{}
+    }
     try:
         for file in files:
             file_content = await file.read()
             await file.seek(0)
             file_name = file.filename
             final_response[file_name] = {}
+            processing_details['documents_details'][file_name] = {
+                "upload_to_s3": None,
+                "bda_invocation": None,
+                "database_update": None,
+                "validation": None
+            }
 
-            await notify(client_id, f"Uploading file {file_name} for deal {deal_id} to S3.")
+            await notify(client_id, f"Uploading file {file_name} for deal {deal_id} to S3.", processing_details)
             
             response = upload_files_to_s3(
                 file_content=file_content, 
@@ -54,27 +78,35 @@ async def upload_and_process_files(
             )
             
             if response['ResponseMetadata']['HTTPStatusCode'] != 200:
-                await notify(client_id, f"Error uploading file {file_name} to S3")
                 final_response[file_name].update({"upload_to_s3": False})
+                processing_details['documents_details']['file_name'].update({"upload_to_s3": False})
+                await notify(client_id, f"Error uploading file {file_name} to S3", processing_details)
+                cascade_fail(processing_details['documents_details'][file_name])
+                continue
                 
             if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 final_response[file_name].update({"upload_to_s3": True})
-                await notify(client_id, f"File {file_name} uploaded to S3 successfully")
+                processing_details['documents_details'][file_name].update({"upload_to_s3": True})
+                await notify(client_id, f"File {file_name} uploaded to S3 successfully", processing_details)
                 # await notify(client_id, f"Invoking BDA job for file {file_name}")
                 
                 result = invoke_bda_job(f"s3://{bucket_name}/input/{deal_id}/{file_name}", f"s3://{bucket_name}/output/{deal_id}")
                 
-                await notify(client_id, f"BDA invocation started for file {file_name}, invocationARN: {result['invocationArn']} ")
+                await notify(client_id, f"BDA invocation started for file {file_name}, invocationARN: {result['invocationArn']}", processing_details)
                 
                 invocation_arn = result['invocationArn']
                 status = get_invocation_result(invocation_arn)
 
                 if status.get('status') == "Success":
                     final_response[file_name].update({"bda_invocation": True})
-                    await notify(client_id, f"BDA invocation completed for file {file_name} successfully. Results are stored in {status.get('outputConfiguration')['s3Uri'].replace('job_metadata.json', '0/custom_output/0/result.json')}")
+                    processing_details['documents_details'][file_name].update({"bda_invocation": True})
+                    await notify(client_id, f"BDA invocation completed for file {file_name} successfully. Results are stored in {status.get('outputConfiguration')['s3Uri'].replace('job_metadata.json', '0/custom_output/0/result.json')}", processing_details)
                 else:
                     final_response[file_name].update({"bda_invocation": False})
-                    await notify(client_id, f"BDA invocation completed with error for file {file_name}. Error: {status}")
+                    processing_details['documents_details'][file_name].update({"bda_invocation": False})
+                    await notify(client_id, f"BDA invocation completed with error for file {file_name}. Error: {status}", processing_details)
+                    cascade_fail(processing_details['documents_details'][file_name])
+                    continue
                 
         return {
             "status": json.dumps(final_response)

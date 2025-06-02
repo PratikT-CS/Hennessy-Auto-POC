@@ -178,6 +178,8 @@ import { useState, useEffect, useRef } from "react";
 import Select from "react-select";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const dealOptions = [
   { value: "trade", label: "Trade Pack" },
@@ -196,8 +198,10 @@ export default function DealForm() {
   const [documents, setDocuments] = useState({});
   const [loading, setLoading] = useState(false);
   const [clientId] = useState(uuidv4()); // Generate unique client ID
-  const [wsMessage, setWsMessage] = useState("");
+  const [wsMessage, setWsMessage] = useState(null);
   const wsRef = useRef(null);
+  const [docStatus, setDocStatus] = useState({});
+  const [bckDealId, setBckDealId] = useState(); // Example deal ID, can be dynamic
 
   const requiredDocs = requiredDocsMap[dealType.value];
 
@@ -210,7 +214,21 @@ export default function DealForm() {
     ws.onopen = () => console.log("WebSocket connected");
     ws.onmessage = (event) => {
       console.log("Message from server:", event.data);
-      setWsMessage(event.data);
+      setWsMessage(JSON.parse(event.data));
+
+      const messageData = JSON.parse(event.data);
+      if (messageData.processing_details){
+        const transformedStatus = {};
+        for (const [fileName, status] of Object.entries(messageData?.processing_details?.documents_details)) {
+          transformedStatus[fileName] = {
+            s3: status?.upload_to_s3 === true ? "Success" : status?.upload_to_s3 === false ? "Fail" : "Loader",
+            bda: status?.bda_invocation === true ? "Success" : status?.bda_invocation === false ? "Fail" : "Loader",
+            db: status?.database_update === true ? "Success" : status?.database_update === false ? "Fail" : "Loader",
+            validation: status?.validation === true ? "Success" : status?.validation === false ? "Fail" : "Loader"
+          };
+        setDocStatus(transformedStatus);
+        }
+      }
     };
     ws.onerror = (err) => console.error("WebSocket error:", err);
     ws.onclose = () => console.log("WebSocket closed");
@@ -220,9 +238,9 @@ export default function DealForm() {
     return () => ws.close();
   }, [clientId]);
 
-  useEffect(() => {
-    console.log("WebSocket message received:", wsMessage);
-  }, [wsMessage]);
+  // useEffect(() => {
+  //   console.log("WebSocket message received:", wsMessage);
+  // }, [wsMessage]);
 
   const handleSingleFileUpload = (e, docLabel) => {
     const file = e.target.files[0];
@@ -262,6 +280,8 @@ export default function DealForm() {
         `http://127.0.0.1:8000/api/upload/${clientId}/250001`,
         formData
       );
+      setDocStatus(response?.data?.processing_details?.documents_details)
+      setBckDealId(response.data?.processing_details?.deal_id);
       setResult(`Success: ${JSON.stringify(response.data)}`);
     } catch (error) {
       console.error(error);
@@ -274,8 +294,31 @@ export default function DealForm() {
     }
   };
 
+  const renderStatusIcon = (status) => {
+    switch (status) {
+      case "Loader":
+        return <Loader2 className="w-5 h-5 text-yellow-500 animate-spin" />;
+      case "Success":
+        return <CheckCircle2 className="w-5 h-5 text-green-600" />;
+      case "Fail":
+        return <XCircle className="w-5 h-5 text-red-600" />;
+      default:
+        return <span className="text-gray-400">-</span>;
+    }
+  };
+
+  const isProcessingOngoing = () => {
+    return Object.values(docStatus).some((status) =>
+      Object.values(status).includes("Loader")
+    );
+  };
+
+  const areAllRequiredDocsUploaded = () => {
+    return requiredDocs.every((doc) => documents.hasOwnProperty(doc));
+  };
+
   return (
-    <div className="flex justify-center items-center h-full w-full">
+    <div className="flex justify-center items-center h-full w-full gap-10">
       <div className="w-full p-10 rounded-3xl bg-gray-100 md:w-2/3 lg:w-2/4">
         <h2 className="text-xl font-semibold mb-4 text-center">
           Upload Documents for Deal Processing
@@ -297,15 +340,12 @@ export default function DealForm() {
               {requiredDocs.map((doc, i) => (
                 <li
                   key={i}
-                  className="flex items-center justify-between space-x-4"
+                  className="flex items-center justify-between space-x-4 p-2"
                 >
                   <label className="w-40 font-medium">{doc}</label>
 
                   {documents[doc] && (
-                    <span className="text-green-600 font-semibold text-xs text-right">
-                      {/* {documents[doc].name} */}
-                      Done
-                    </span>
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
                   )}
                   {/* Hidden file input + Styled label as button */}
                   <div className="relative">
@@ -322,7 +362,7 @@ export default function DealForm() {
                     >
                       {/* Upload File */}
                       {/* Change File */}
-                      {documents[doc] ? "Change File" : "Upload File"}
+                      {documents[doc] ? "Change File" : "Select File"}
                     </label>
                   </div>
                 </li>
@@ -357,22 +397,71 @@ export default function DealForm() {
             type="submit"
             disabled={!requiredDocs.every((doc) => documents[doc]) || loading}
             className={`px-4 py-2 rounded-lg text-grey w-full mt-4 ${
-              loading
+              !areAllRequiredDocsUploaded() || isProcessingOngoing()
                 ? "bg-blue-300 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 "
+                : "bg-blue-500 hover:bg-blue-600"
             }`}
           >
             {loading ? "Processing..." : "Upload and Process All Documents"}
           </button>
         </form>
 
-        {result && (
+        {/* {result && (
           <div className="bg-green-100 p-4 rounded-lg shadow mt-5">
             <h3 className="font-semibold text-green-800">Result</h3>
-            <p>{wsMessage}</p>
+            <p>{wsMessage?.message}</p>
+            <p>{docStatus && "DocStatus"}</p>
+          </div>
+        )} */}
+      </div>
+      {Object.keys(docStatus).length > 0 && (
+        <div className="w-[50vw] p-10 rounded-3xl bg-gray-100 md:w-2/3 lg:w-2/4">
+        <div className="bg-green-100 p-4 rounded-lg shadow mt-5">
+            <h3 className="font-semibold text-green-800">Result / Process</h3>
+            <p>{wsMessage?.message}</p>
+        </div>
+        <div className="mt-8">
+          <h3 className="font-semibold mb-4 text-center text-gray-800 text-lg">
+            📄 Document Processing Status
+          </h3>
+          <div className="overflow-auto rounded-xl shadow-md border border-gray-200 bg-white">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="py-3 px-4 text-left font-semibold border-b">Document</th>
+                  <th className="py-3 px-4 text-center font-semibold border-b">Upload to S3</th>
+                  <th className="py-3 px-4 text-center font-semibold border-b">BDA Invocation</th>
+                  <th className="py-3 px-4 text-center font-semibold border-b">Stored in DB</th>
+                  <th className="py-3 px-4 text-center font-semibold border-b">Validation</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(docStatus).map(([file, status], idx) => (
+                  <tr key={idx} className="hover:bg-gray-50 transition">
+                    <td className="py-2 px-4 font-medium border-b">{file}</td>
+                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.s3)}</td>
+                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.bda)}</td>
+                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.db)}</td>
+                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.validation)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {bckDealId && (
+          <div className="mt-4 text-center">
+            <Link
+              disabled={!isProcessingOngoing()}
+              to={`/deal/${bckDealId}`}
+              className="text-blue-600 hover:underline"
+            >
+              View Deal Details
+            </Link>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
