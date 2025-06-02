@@ -96,12 +96,12 @@ export default function DealForm() {
     try {
       setLoading(true);
       const response = await axios.post(
-        `http://127.0.0.1:8000/api/upload/${clientId}/250001`,
+        `http://127.0.0.1:8000/api/upload/${clientId}/123456`,
         formData
       );
       setDocStatus(response?.data?.processing_details?.documents_details)
       setBckDealId(response.data?.processing_details?.deal_id);
-      setResult(`Success: ${JSON.stringify(response.data)}`);
+      setResult(`Success: ${JSON.stringify(response?.data)}`);
     } catch (error) {
       console.error(error);
       setResult("Failed to process deal. Please try again.");
