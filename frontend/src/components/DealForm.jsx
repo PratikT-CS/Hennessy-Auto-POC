@@ -65,16 +65,11 @@ export default function DealForm() {
 
     const formData = new FormData();
     // formData.append("dealType", dealType.value);
-    // formData.append("description", input);
 
-    // var files = [];
     requiredDocs.forEach((docLabel) => {
-      // files.push(documents[docLabel]);
+      // formData.append("docLabel", documents[docLabel]);
       formData.append("files", documents[docLabel]);
-      // formData.append("document_names", docLabel);
     });
-    // formData.append("files", files);
-    // console.log(formData);
 
     try {
       setLoading(true);

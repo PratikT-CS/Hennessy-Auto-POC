@@ -14,6 +14,7 @@ class DocumentType(str, enum.Enum):
     mv1 = "mv1"
     dl = "dl"
     title = "title"
+    poa = "power_of_attorney"
 
 class Role(str, enum.Enum):
     buyer = "buyer"
