@@ -260,6 +260,8 @@ async def upload_and_process_files(
                 final_response[file_name].update({"upload_to_s3": True})
                 processing_details['documents_details'][file_name].update({"upload_to_s3": True})
                 await notify(client_id, f"File {file_name} uploaded to S3 successfully", processing_details)
+                processing_details['documents_details'][file_name].update({"upload_to_s3": True})
+                await notify(client_id, f"File {file_name} uploaded to S3 successfully", processing_details)
                 # await notify(client_id, f"Invoking BDA job for file {file_name}")
                
                 result = invoke_bda_job(f"s3://{bucket_name}/input/{deal_id}/{file_name}", f"s3://{bucket_name}/output/{deal_id}")

@@ -10,7 +10,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     connections[client_id] = websocket
     try:
         await websocket.send_json({
-            "message": f"Upload documents to process them.",
+            "message": f"Upload documents to process them.", 
             "processing_started": False,
             "processing_details": {},
             "client_id": client_id
