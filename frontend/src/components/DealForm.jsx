@@ -41,16 +41,38 @@ export default function DealForm() {
       setWsMessage(JSON.parse(event.data));
 
       const messageData = JSON.parse(event.data);
-      if (messageData.processing_details){
+      if (messageData.processing_details) {
         const transformedStatus = {};
-        for (const [fileName, status] of Object.entries(messageData?.processing_details?.documents_details)) {
+        for (const [fileName, status] of Object.entries(
+          messageData?.processing_details?.documents_details
+        )) {
           transformedStatus[fileName] = {
-            s3: status?.upload_to_s3 === true ? "Success" : status?.upload_to_s3 === false ? "Fail" : "Loader",
-            bda: status?.bda_invocation === true ? "Success" : status?.bda_invocation === false ? "Fail" : "Loader",
-            db: status?.database_update === true ? "Success" : status?.database_update === false ? "Fail" : "Loader",
-            validation: status?.validation === true ? "Success" : status?.validation === false ? "Fail" : "Loader"
+            s3:
+              status?.upload_to_s3 === true
+                ? "Success"
+                : status?.upload_to_s3 === false
+                ? "Fail"
+                : "Loader",
+            bda:
+              status?.bda_invocation === true
+                ? "Success"
+                : status?.bda_invocation === false
+                ? "Fail"
+                : "Loader",
+            db:
+              status?.database_update === true
+                ? "Success"
+                : status?.database_update === false
+                ? "Fail"
+                : "Loader",
+            validation:
+              status?.validation === true
+                ? "Success"
+                : status?.validation === false
+                ? "Fail"
+                : "Loader",
           };
-        setDocStatus(transformedStatus);
+          setDocStatus(transformedStatus);
         }
       }
     };
@@ -96,13 +118,13 @@ export default function DealForm() {
     try {
       setLoading(true);
       const response = await axios.post(
-        `http://127.0.0.1:8000/api/upload/${clientId}/123123`,
+        `http://127.0.0.1:8000/api/upload/${clientId}/369333`,
         formData
       );
       // setDocStatus(JSON.parse(response?.data?.status))
       console.log(response?.data);
       setBckDealId(111222);
-      setResult(`Success: ${response.data}`)
+      setResult(`Success: ${response.data}`);
     } catch (error) {
       console.error(error);
       setResult("Failed to process deal. Please try again.");
@@ -236,50 +258,68 @@ export default function DealForm() {
       </div>
       {Object.keys(docStatus).length > 0 && (
         <div className="w-[50vw] p-10 rounded-3xl bg-gray-100 md:w-2/3 lg:w-2/4">
-        <div className="bg-green-100 p-4 rounded-lg shadow mt-5">
+          <div className="bg-green-100 p-4 rounded-lg shadow mt-5">
             <h3 className="font-semibold text-green-800">Result / Process</h3>
             <p>{wsMessage?.message}</p>
-        </div>
-        <div className="mt-8">
-          <h3 className="font-semibold mb-4 text-center text-gray-800 text-lg">
-            📄 Document Processing Status
-          </h3>
-          <div className="overflow-auto rounded-xl shadow-md border border-gray-200 bg-white">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-gray-700">
-                <tr>
-                  <th className="py-3 px-4 text-left font-semibold border-b">Document</th>
-                  <th className="py-3 px-4 text-center font-semibold border-b">Upload to S3</th>
-                  <th className="py-3 px-4 text-center font-semibold border-b">BDA Invocation</th>
-                  <th className="py-3 px-4 text-center font-semibold border-b">Stored in DB</th>
-                  <th className="py-3 px-4 text-center font-semibold border-b">Validation</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(docStatus).map(([file, status], idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition">
-                    <td className="py-2 px-4 font-medium border-b">{file}</td>
-                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.s3)}</td>
-                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.bda)}</td>
-                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.db)}</td>
-                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.validation)}</td>
+          </div>
+          <div className="mt-8">
+            <h3 className="font-semibold mb-4 text-center text-gray-800 text-lg">
+              📄 Document Processing Status
+            </h3>
+            <div className="overflow-auto rounded-xl shadow-md border border-gray-200 bg-white">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-gray-700">
+                  <tr>
+                    <th className="py-3 px-4 text-left font-semibold border-b">
+                      Document
+                    </th>
+                    <th className="py-3 px-4 text-center font-semibold border-b">
+                      Upload to S3
+                    </th>
+                    <th className="py-3 px-4 text-center font-semibold border-b">
+                      BDA Invocation
+                    </th>
+                    <th className="py-3 px-4 text-center font-semibold border-b">
+                      Stored in DB
+                    </th>
+                    <th className="py-3 px-4 text-center font-semibold border-b">
+                      Validation
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {Object.entries(docStatus).map(([file, status], idx) => (
+                    <tr key={idx} className="hover:bg-gray-50 transition">
+                      <td className="py-2 px-4 font-medium border-b">{file}</td>
+                      <td className="py-2 px-4 text-center border-b">
+                        {renderStatusIcon(status?.s3)}
+                      </td>
+                      <td className="py-2 px-4 text-center border-b">
+                        {renderStatusIcon(status?.bda)}
+                      </td>
+                      <td className="py-2 px-4 text-center border-b">
+                        {renderStatusIcon(status?.db)}
+                      </td>
+                      <td className="py-2 px-4 text-center border-b">
+                        {renderStatusIcon(status?.validation)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        {bckDealId && (
-          <div className="mt-4 text-center">
-            <Link
-              disabled={!isProcessingOngoing()}
-              to={`/deal/${bckDealId}`}
-              className="text-blue-600 hover:underline"
-            >
-              View Deal Details
-            </Link>
-          </div>
-        )}
+          {bckDealId && (
+            <div className="mt-4 text-center">
+              <Link
+                disabled={!isProcessingOngoing()}
+                to={`/deal/${bckDealId}`}
+                className="text-blue-600 hover:underline"
+              >
+                View Deal Details
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

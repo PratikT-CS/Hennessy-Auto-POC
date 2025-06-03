@@ -9,6 +9,7 @@ from ..aws.get_result_from_s3 import read_json_result_from_s3
 from ..crud.deal_crud import create_deal
 from ..crud.deal_crud import add_document
 from ..db.database import get_db
+from ..validation.data_validation import validate_documents_for_deal
 from app.models.models import DealType, DocumentType
 from dotenv import load_dotenv
 from ..routes.ws import connections
@@ -156,8 +157,23 @@ async def upload_and_process_files(
                     await notify(client_id, f"Failed to store document in database for file {file_name}. Error: {str(e)}", processing_details)
                     cascade_fail(processing_details['documents_details'][file_name])
                     continue
-            cascade_fail(processing_details['documents_details'][file_name])
-            final_response[file_name].update(processing_details['documents_details'][file_name])
+
+                cascade_fail(processing_details['documents_details'][file_name])
+                final_response[file_name].update(processing_details['documents_details'][file_name])
+
+        await notify(client_id, f"Processing Completed.", {})
+        
+        # Here we will call validation functions to validate documents
+        await notify(client_id, f"Starting document validation for deal {deal_id}.", processing_details)
+        validation_success = await validate_documents_for_deal(deal.id, db, client_id, processing_details)
+
+        # Update the processing_details for validation status
+        for file_name in processing_details['documents_details']:
+            processing_details['documents_details'][file_name]['validation'] = validation_success
+
+        await notify(client_id, f"Document validation completed for deal {deal_id}. Success: {validation_success}", processing_details)
+
+
         return {
             "status": json.dumps(final_response)
         }
