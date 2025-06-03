@@ -1,14 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
 
 const mockDeals = {
-  Today: ["Deal A"],
-  Yesterday: ["Deal B"],
+  "Today": ["Deal A"],
+  "Yesterday": ["Deal B"],
   "Last 7 Days": ["Deal C"],
   "Previous 30 Days": ["Deal D"],
 };
 
 export default function DealList() {
   const [selected, setSelected] = useState("");
+  const [deals, setDeals] = useState([]);
+
+  useEffect(() => {
+    // Simulate fetching deals from an API
+    const fetchDeals = async () => {
+      // In a real application, you would replace this with an API call
+      const response = await axios.get('http://localhost:8000/api/deals');
+      setDeals(response.data);
+    };
+
+    fetchDeals();
+  }, []);
 
   return (
     <>
@@ -17,18 +31,23 @@ export default function DealList() {
           Hennessey Auto IDP
         </h2>
       </div>
-      <div className="mb-5">
-        <button className="w-full">New Deal</button>
+      <div className="mb-5 flex justify-center">
+        <Link 
+          className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-1 rounded-lg cursor-pointer shadow "
+          to="/"
+        >
+            New Deal
+        </Link>
       </div>
       <div>
         <h2 className="text-xl  mb-4">Previously Processed Deals</h2>
-        {Object.entries(mockDeals).map(([period, deals]) => (
+        {Object.entries(deals).map(([period, deals]) => (
           <div key={period} className="mb-4">
             <h3 className="text-lg font-semibold capitalize">
-              {period.replace(/([A-Z])/g, " $1")}
+              {period?.replace(/([A-Z])/g, " $1")}
             </h3>
             <ul className="ml-4 mt-2">
-              {deals.map((deal) => (
+              {deals?.map((deal) => (
                 <li
                   key={deal}
                   className={`cursor-pointer hover:text-blue-500 ${
@@ -36,7 +55,7 @@ export default function DealList() {
                   }`}
                   onClick={() => setSelected(deal)}
                 >
-                  {deal}
+                  <Link to={`/deal/${deal}`}>{deal}</Link>
                 </li>
               ))}
             </ul>

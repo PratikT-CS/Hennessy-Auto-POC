@@ -100,7 +100,7 @@ export default function DealForm() {
         formData
       );
       // setDocStatus(JSON.parse(response?.data?.status))
-      console.log(response?.data);
+      console.log(response?.data['status']);
       setBckDealId(111222);
       setResult(`Success: ${response.data}`)
     } catch (error) {
@@ -162,28 +162,30 @@ export default function DealForm() {
                   key={i}
                   className="flex items-center justify-between space-x-4 p-2"
                 >
-                  <label className="w-40 font-medium">{doc}</label>
+                  <label className="font-medium">{doc}</label>
+                  <div className="flex items-center space-x-2">
 
-                  {documents[doc] && (
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  )}
-                  {/* Hidden file input + Styled label as button */}
-                  <div className="relative">
-                    <input
-                      id={`file-input-${i}`}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleSingleFileUpload(e, doc)}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor={`file-input-${i}`}
-                      className="cursor-pointer bg-gray-400 text-white px-4 py-1 rounded text-sm hover:bg-gray-500 transition"
-                    >
-                      {/* Upload File */}
-                      {/* Change File */}
-                      {documents[doc] ? "Change File" : "Select File"}
-                    </label>
+                    {documents[doc] && (
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    )}
+                    {/* Hidden file input + Styled label as button */}
+                    <div className="relative">
+                      <input
+                        id={`file-input-${i}`}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleSingleFileUpload(e, doc)}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor={`file-input-${i}`}
+                        className="cursor-pointer bg-gray-400 text-white px-4 py-1 rounded text-sm hover:bg-gray-500 transition"
+                      >
+                        {/* Upload File */}
+                        {/* Change File */}
+                        {documents[doc] ? "Change File" : "Select File"}
+                      </label>
+                  </div>
                   </div>
                 </li>
               ))}
@@ -219,7 +221,7 @@ export default function DealForm() {
             className={`px-4 py-2 rounded-lg text-grey w-full mt-4 ${
               !areAllRequiredDocsUploaded() || isProcessingOngoing()
                 ? "bg-blue-300 cursor-not-allowed"
-                : "bg-blue-500 hover:bg-blue-600"
+                : "bg-blue-500 hover:bg-blue-600 cursor-pointer"
             }`}
           >
             {loading ? "Processing..." : "Upload and Process All Documents"}
@@ -236,50 +238,50 @@ export default function DealForm() {
       </div>
       {Object.keys(docStatus).length > 0 && (
         <div className="w-[50vw] p-10 rounded-3xl bg-gray-100 md:w-2/3 lg:w-2/4">
-        <div className="bg-green-100 p-4 rounded-lg shadow mt-5">
-            <h3 className="font-semibold text-green-800">Result / Process</h3>
-            <p>{wsMessage?.message}</p>
-        </div>
-        <div className="mt-8">
-          <h3 className="font-semibold mb-4 text-center text-gray-800 text-lg">
-            📄 Document Processing Status
-          </h3>
-          <div className="overflow-auto rounded-xl shadow-md border border-gray-200 bg-white">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-gray-700">
-                <tr>
-                  <th className="py-3 px-4 text-left font-semibold border-b">Document</th>
-                  <th className="py-3 px-4 text-center font-semibold border-b">Upload to S3</th>
-                  <th className="py-3 px-4 text-center font-semibold border-b">BDA Invocation</th>
-                  <th className="py-3 px-4 text-center font-semibold border-b">Stored in DB</th>
-                  <th className="py-3 px-4 text-center font-semibold border-b">Validation</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(docStatus).map(([file, status], idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition">
-                    <td className="py-2 px-4 font-medium border-b">{file}</td>
-                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.s3)}</td>
-                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.bda)}</td>
-                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.db)}</td>
-                    <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.validation)}</td>
+          <div className="bg-green-100 p-4 rounded-lg shadow mt-5">
+              <h3 className="font-semibold text-green-800">Result / Process</h3>
+              <p>{wsMessage?.message}</p>
+          </div>
+          <div className="mt-8">
+            <h3 className="font-semibold mb-4 text-center text-gray-800 text-lg">
+              📄 Document Processing Status
+            </h3>
+            <div className="overflow-auto rounded-xl shadow-md border border-gray-200 bg-white">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-gray-700">
+                  <tr>
+                    <th className="py-3 px-4 text-left font-semibold border-b">Document</th>
+                    <th className="py-3 px-4 text-center font-semibold border-b">Upload to S3</th>
+                    <th className="py-3 px-4 text-center font-semibold border-b">BDA Invocation</th>
+                    <th className="py-3 px-4 text-center font-semibold border-b">Stored in DB</th>
+                    <th className="py-3 px-4 text-center font-semibold border-b">Validation</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {Object.entries(docStatus).map(([file, status], idx) => (
+                    <tr key={idx} className="hover:bg-gray-50 transition">
+                      <td className="py-2 px-4 font-medium border-b">{file}</td>
+                      <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.s3)}</td>
+                      <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.bda)}</td>
+                      <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.db)}</td>
+                      <td className="py-2 px-4 text-center border-b">{renderStatusIcon(status?.validation)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        {bckDealId && (
-          <div className="mt-4 text-center">
-            <Link
-              disabled={!isProcessingOngoing()}
-              to={`/deal/${bckDealId}`}
-              className="text-blue-600 hover:underline"
-            >
-              View Deal Details
-            </Link>
-          </div>
-        )}
+          {bckDealId && (
+            <div className="mt-4 text-center">
+              <Link
+                disabled={!isProcessingOngoing()}
+                to={`/deal/${bckDealId}`}
+                className="text-blue-600 hover:underline"
+              >
+                View Deal Details
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

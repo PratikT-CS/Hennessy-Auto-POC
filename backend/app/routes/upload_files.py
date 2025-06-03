@@ -156,7 +156,7 @@ async def upload_and_process_files(
                     await notify(client_id, f"Failed to store document in database for file {file_name}. Error: {str(e)}", processing_details)
                     cascade_fail(processing_details['documents_details'][file_name])
                     continue
-            cascade_fail(processing_details['documents_details'][file_name])
+                processing_details['documents_details'][file_name].update({"validation": False})
             final_response[file_name].update(processing_details['documents_details'][file_name])
         return {
             "status": json.dumps(final_response)

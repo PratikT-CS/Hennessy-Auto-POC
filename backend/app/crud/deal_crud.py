@@ -3,7 +3,9 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.models.models import Deal, DealType, Person, Role, Vehicle, Document, DocumentType
 from fastapi.encoders import jsonable_encoder
-
+import json
+from datetime import datetime
+from decimal import Decimal
 
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, obj):
