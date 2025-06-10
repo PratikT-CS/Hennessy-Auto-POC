@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes import upload_files
 from app.routes import ws
 from app.routes import deal
+from app.routes import presign_url
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,6 +27,7 @@ app.add_middleware(
 app.include_router(upload_files.router)
 app.include_router(ws.router)
 app.include_router(deal.router)
+app.include_router(presign_url.router)
 
 @app.get("/")
 def read_root():
